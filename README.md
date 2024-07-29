@@ -1,5 +1,3 @@
-
-```markdown
 # Crash Game Betting Bot
 
 This project implements a betting bot for a crash game using the Martingale strategy. The bot places orders based on the game results and adjusts the bet size accordingly. The bot supports multiple accounts and uses the game API to place bets and check results.
@@ -77,4 +75,3 @@ Feel free to submit issues, fork the repository, and send pull requests.
 ## Disclaimer
 
 This project is for educational purposes only. Use it at your own risk. The author is not responsible for any financial losses or damages that may occur as a result of using this bot.
-```
