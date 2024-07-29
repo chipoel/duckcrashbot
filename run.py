@@ -15,10 +15,10 @@ common_headers = {
     "content-type": "application/json"
 }
 
-# List of authorization tokens / Multiple Accounts
+# List of authorization tokens
 authorization_tokens = [
-    "Bearer eyJhbGcxxxxIUzI1NiIsInR5xxxxxxxx.eyJ1c2VySWQiOjQ0NjIxNzxxxxVzdGFtcCI6MTcyxxxxxxEyMywidHlwZSI6MSwiaWF0IjoxNzIyMjQ3NDI0LCJleHAiOjExxxxx.UG-972JDJl03LaF8Ry56nSxXYJzR4XM_50GtC5xxxxxx",
-    "Bearer eyJhbGcxxxxIUzI1NiIsInR5xxxxxxxx.eyJ1c2VySWQiOjQ0NjIxNzxxxxVzdGFtcCI6MTcyxxxxxxEyMywidHlwZSI6MSwiaWF0IjoxNzIyMjQ3NDI0LCJleHAiOjExxxxx.UG-972JDJl03LaF8Ry56nSxXYJzR4XM_50GtC5xxxxxx"
+    "Bearer your_first_token",
+    "Bearer your_second_token"
 ]
 
 order_limit = 3
@@ -53,6 +53,17 @@ def get_latest_game_id(headers):
             return latest_game['id']
     return None
 
+def get_previous_game_result(headers):
+    url = "https://game-api.duckcoop.xyz/dump-game/list-game"
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        data = response.json()
+        if 'data' in data and 'data' in data['data']:
+            previous_game = data['data']['data'][1]  # Get the second latest game
+            return previous_game
+    return None
+
 def create_order(headers, game_id, quantity, price_out):
     url = "https://game-api.duckcoop.xyz/dump-game/create-order"
     payload = {
@@ -81,6 +92,16 @@ def process_orders_for_account(token):
 
     # Check if the game ID has changed and reset the order count and finished flag
     if game_id != state["current_game_id"]:
+        # Check the result of the previous game
+        previous_game_result = get_previous_game_result(headers)
+        if previous_game_result and previous_game_result['status'] == 2:
+            dump_price = float(previous_game_result['dump_price']) if previous_game_result['dump_price'] else 0
+            if dump_price >= 1.1:
+                state["previous_loss"] = False
+                state["initial_quantity"] = 500  # Reset to initial quantity on win
+            else:
+                state["previous_loss"] = True
+        
         state["current_game_id"] = game_id
         state["orders_placed"] = 0
         state["orders_finished"] = False
@@ -122,10 +143,8 @@ def process_orders_for_account(token):
         order_response = create_order(headers, game_id, quantity, 1.1)  # Minimum price_out set to 1.1
         if order_response:
             state["orders_placed"] += 1
-            state["previous_loss"] = False  # Reset the loss flag after a successful order
             print(f"Created order for token {token}: {order_response}")
         else:
-            state["previous_loss"] = True  # Set the loss flag if the order fails
             print(f"Failed to create order for token {token}")
 
 # Run the process in a loop every 15 seconds
